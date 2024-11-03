@@ -1,0 +1,26 @@
+version: '3'
+services:
+  auth_service:
+    build:
+      context: ./auth_service
+    ports:
+      - "5001:5001"
+    volumes:
+      - ./auth_service:/app  # Mount local directory to persist database
+
+  comment_service:
+    build:
+      context: ./comment_service
+    ports:
+      - "5002:5002"
+    volumes:
+      - ./comment_service:/app  # Mount local directory to persist database
+     
+  post_service:
+    build:
+      context: ./post_service
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./post_service:/app  # Mount local directory to persist database
+      - ./post_service/uploads:/app/uploads

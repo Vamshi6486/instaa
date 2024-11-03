@@ -1,0 +1,5 @@
+Flask==2.0.3  # or any other stable version you prefer
+Flask-SQLAlchemy==2.5.1
+SQLAlchemy==1.4.20
+Werkzeug==2.0.0
+PyJWT
