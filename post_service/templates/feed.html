@@ -56,6 +56,7 @@
             border-radius: 4px;
             padding: 10px 15px;
             cursor: pointer;
+            
         }
         button:hover {
             background-color: #218838;
@@ -121,6 +122,13 @@
             line-height: 1.4; /* Improve readability */
             font-size: 14px; /* Adjust font size if needed */
         }
+        .post img {
+            max-width: 100%;  /* Image can expand to fit the container */
+            height: auto;     /* Maintain aspect ratio */
+            border-radius: 5px;
+            display: block;   /* Make the image a block element */
+            margin: 0 auto;  /* Center the image in the post */
+        }
         
         .commentt {
             border: 1px solid #ccc;
@@ -163,19 +171,22 @@
     <div class="posts">
         {% for post in posts %}
             <div class="post">
-                <p>Posted by User {{ post.user_id }}</p>
+                <p>Posted by  {{ post.user_id }}</p>
                 <img src="{{ url_for('uploaded_file', filename=post.image_path) }}" alt="Post Image">
                 <p>{{ post.caption }}</p>
                 
                 <div class="comment-section">
-                    <button onclick="toggleComments({{ post.id }})">Comment</button>
+                    <button aria-label="Toggle comments" onclick="toggleComments({{ post.id }})">💬</button>
+                    <button id="like-button-{{ post.id }}" onclick="toggleLike({{ post.id }})">🤍</button>
+
+
                     <div class="comment-input" style="display: none;" id="comment-input-{{ post.id }}">
                         <textarea placeholder="Write a comment..." name="comment" id="comment-{{ post.id }}" rows="3"></textarea>
                         <button onclick="submitComment({{ post.id }})">Submit</button>
                     </div>
                     
                     <div class="comment-list" id="comment-list-{{ post.id }}">
-                        <h3>Comments</h3>
+                        <h3>comments</h3>
                         {% for comment in post.comments %}
                           <div class="commentt">
                             <div class="user-id">
@@ -193,6 +204,26 @@
     </div>
 
     <script>
+        function adjustImageSize() {
+            const posts = document.querySelectorAll('.post img');
+            posts.forEach(img => {
+                // Set the image width dynamically based on its natural size
+                const naturalWidth = img.naturalWidth;
+                const naturalHeight = img.naturalHeight;
+                const containerWidth = img.parentElement.clientWidth;
+        
+                // Adjust the image size based on natural dimensions and container width
+                if (naturalWidth > containerWidth) {
+                    img.style.width = '100%';  // Constrain to container width
+                } else {
+                    img.style.width = `${naturalWidth}px`; // Expand to natural size
+                }
+            });
+        }
+        
+        // Adjust image sizes after the page loads
+        window.onload = adjustImageSize;
+        
         document.querySelectorAll('textarea').forEach(textarea => {
             textarea.addEventListener('input', function() {
                 this.style.height = 'auto'; // Reset height
@@ -200,6 +231,16 @@
             });
         });
         
+        function toggleLike(postId) {
+            const likeButton = document.getElementById(`like-button-${postId}`);
+            
+            // Check the current text of the button
+            if (likeButton.textContent === '🤍') {
+                likeButton.textContent = '❤️'; // Change to filled heart if liked
+            } else {
+                likeButton.textContent = '🤍'; // Change to empty heart if not liked
+            }
+        }
         function toggleComments(postId) {
             const commentList = document.getElementById(`comment-list-${postId}`);
             const commentInput = document.getElementById(`comment-input-${postId}`);
