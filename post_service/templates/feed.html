@@ -9,20 +9,37 @@
             margin: 0;
             padding: 20px;
             background-color: #f4f4f4;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
         h1 {
-            text-align: center;
+            text-align: left;
             color: #333;
+            
         }
-        h2 {
+        .mm2{
             color: #555;
+            margin-right:500px;
+            
+           
         }
+        .mm{
+            color: #555;
+            margin-right:400px;
+            
+           
+        }
+
         form {
             background: #fff;
             padding: 20px;
             border-radius: 5px;
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
             margin-bottom: 20px;
+            max-width: 600px; /* Set the same max width as posts */
+            width: 100%; /* Ensure the form takes full width of its container */
+            margin: 0 auto;
         }
         input[type="text"],
         input[type="file"] {
@@ -45,18 +62,21 @@
         }
         .posts {
             display: flex;
-            flex-wrap: wrap;
-            justify-content: space-between;
+            flex-direction: column;
+            align-items: center;
             gap: 20px;
         }
+        
         .post {
             background: #fff;
             border-radius: 5px;
             box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
             padding: 15px;
-            flex: 1 1 calc(30% - 20px);
+            width: 100%;
+            max-width: 600px;  /* Set a max width to center the posts like Instagram */
             margin-bottom: 20px;
         }
+        
         .post img {
             max-width: 100%;
             border-radius: 5px;
@@ -76,13 +96,44 @@
             margin-top: 10px;
             padding: 10px;
             border-top: 1px solid #ccc;
-            display: none;  /* Start hidden */
+            display: block; /* Change to show the comments */
+            max-height: 200px; /* Set a max height for scrolling */
+            overflow-y: auto; /* Allow scrolling for long lists of comments */
         }
+        .comment-input textarea {
+            width: calc(100% - 22px);
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            resize: vertical; /* Allow the user to resize vertically */
+            line-height: 1.4; /* Adjust line height for readability */
+            font-family: Arial, sans-serif; /* Ensure consistent font */
+        }
+        
         .comment {
             background: #e9ecef;
             border-radius: 4px;
-            padding: 5px;
+            padding: 10px;
             margin: 5px 0;
+            word-wrap: break-word; /* Ensure text wraps within the box */
+            white-space: pre-wrap; /* Preserve line breaks in comments */
+            line-height: 1.4; /* Improve readability */
+            font-size: 14px; /* Adjust font size if needed */
+        }
+        
+        .commentt {
+            border: 1px solid #ccc;
+            padding: 8px;
+            margin-bottom: 10px;
+        }
+        .user-id {
+            font-weight: bold;
+            color: #333;
+        }
+        .content {
+            margin-top: 4px;
+            color: #555;
         }
         @media (max-width: 768px) {
             .post {
@@ -97,9 +148,9 @@
     </style>
 </head>
 <body>
-    <h1>Welcome to Your Feed, User {{ user_id }}</h1>
+    <h1>Welcome to Your Feed, {{ user_id }}</h1>
     
-    <h2>Create a New Post</h2>
+    <h2 class="mm">Create a New Post</h2>
     <form action="/posts?token={{ request.args.get('token') }}" method="post" enctype="multipart/form-data">
         <label>Caption:</label>
         <input type="text" name="caption" placeholder="Write a caption..."><br>
@@ -108,7 +159,7 @@
         <button type="submit">Post</button>
     </form>
 
-    <h2>All Posts</h2>
+    <h2 class="mm2">All Posts</h2>
     <div class="posts">
         {% for post in posts %}
             <div class="post">
@@ -119,35 +170,86 @@
                 <div class="comment-section">
                     <button onclick="toggleComments({{ post.id }})">Comment</button>
                     <div class="comment-input" style="display: none;" id="comment-input-{{ post.id }}">
-                        <input type="text" placeholder="Write a comment..." name="comment" id="comment-{{ post.id }}">
+                        <textarea placeholder="Write a comment..." name="comment" id="comment-{{ post.id }}" rows="3"></textarea>
                         <button onclick="submitComment({{ post.id }})">Submit</button>
                     </div>
                     
                     <div class="comment-list" id="comment-list-{{ post.id }}">
-                        <!-- Comments will be dynamically added here -->
-                    </div>
+                        <h3>Comments</h3>
+                        {% for comment in post.comments %}
+                          <div class="commentt">
+                            <div class="user-id">
+                              <strong>User {{ comment.user_id }}</strong>
+                            </div>
+                            <div class="content">
+                              {{ comment.content }}
+                            </div>
+                          </div>
+                        {% endfor %}
+                      </div>
                 </div>
             </div>
         {% endfor %}
     </div>
 
     <script>
+        document.querySelectorAll('textarea').forEach(textarea => {
+            textarea.addEventListener('input', function() {
+                this.style.height = 'auto'; // Reset height
+                this.style.height = (this.scrollHeight) + 'px'; // Set height to fit content
+            });
+        });
+        
         function toggleComments(postId) {
             const commentList = document.getElementById(`comment-list-${postId}`);
             const commentInput = document.getElementById(`comment-input-${postId}`);
-            // Toggle the visibility of the comment list and input
-            commentList.style.display = commentList.style.display === 'block' ? 'none' : 'block';
-            commentInput.style.display = commentInput.style.display === 'block' ? 'none' : 'block';
+        
+            // Toggle visibility
+            const isVisible = commentList.style.display === 'block';
+            commentList.style.display = isVisible ? 'none' : 'block';
+            commentInput.style.display = isVisible ? 'none' : 'block';
+        
+            // Fetch comments if the section is being opened
+            if (!isVisible) {
+                fetch(`http://localhost:5002/comments/${postId}`)
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Failed to fetch comments');
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        // Clear the existing comments
+                        commentList.innerHTML = '';
+                        data.forEach(comment => {
+                            addCommentToDOM(postId, comment);
+                        });
+                    })
+                    .catch(error => {
+                        console.error('Error fetching comments:', error);
+                        alert('Could not load comments.');
+                    });
+            }
         }
-
+        
         function submitComment(postId) {
             const commentInput = document.getElementById(`comment-${postId}`);
-            const commentContent = commentInput.value;
+            let commentContent = commentInput.value;
+        
+            // Remove empty lines and trim extra whitespace
+            commentContent = commentContent
+                .split('\n')                            // Split the comment by lines
+                .filter(line => line.trim() !== '')      // Filter out empty lines
+                .map(line => line.trim())                // Trim each line
+                .join('\n');                             // Join lines back with newline
         
             if (!commentContent) {
                 alert('Please enter a comment.');
                 return;
             }
+        
+            // Assuming user_id is available as a global variable or fetched from somewhere
+            const userId = "{{ user_id }}"; // You can replace this with the actual way to get the user_id
         
             fetch('http://localhost:5002/comments', {
                 method: 'POST',
@@ -156,7 +258,8 @@
                 },
                 body: JSON.stringify({
                     post_id: postId,
-                    comment: commentContent
+                    comment: commentContent,
+                    user_id: userId // Include user_id in the request
                 }),
             })
             .then(response => {
@@ -167,25 +270,26 @@
             })
             .then(data => {
                 if (data.message === "Comment added successfully!") {
-                    addCommentToDOM(postId, commentContent);
-                    commentInput.value = ''; // Clear the input
+                    addCommentToDOM(postId, { user_id: userId, content: commentContent });
+                    commentInput.value = ''; // Clear the input field after submitting
                 } else {
-                    alert(data.message);
+                    alert('Failed to add comment.');
                 }
             })
             .catch(error => {
-                console.error('Error:', error);
-                alert('There was an error adding the comment: ' + error.message);
+                console.error('Error adding comment:', error);
+                alert('Could not add comment.');
             });
         }
         
-        
-
-        function addCommentToDOM(postId, commentContent) {
+        function addCommentToDOM(postId, comment) {
             const commentList = document.getElementById(`comment-list-${postId}`);
             const commentDiv = document.createElement('div');
-            commentDiv.classList.add('comment');
-            commentDiv.textContent = commentContent;
+            commentDiv.className = 'commentt';
+            commentDiv.innerHTML = `
+                <div class="user-id"><strong>User ${comment.user_id}</strong></div>
+                <div class="content">${comment.content}</div>
+            `;
             commentList.appendChild(commentDiv);
         }
     </script>

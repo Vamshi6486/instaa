@@ -5,6 +5,9 @@ WORKDIR /app
 
 COPY requirements.txt .
 RUN pip install -r requirements.txt
+# Assuming you have a Python-based Docker image
+
+
 
 COPY . .
 

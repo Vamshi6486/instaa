@@ -12,8 +12,7 @@ db = SQLAlchemy(app)
 SECRET_KEY = "your_secret_key"  # Replace with a secure key for JWT signing
 
 class User(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(80), unique=True, nullable=False)
+    user_id = db.Column(db.String(80), primary_key=True)  # Set user_id as the primary key
     password = db.Column(db.String(120), nullable=False)
 
 @app.before_first_request
@@ -24,38 +23,45 @@ def create_tables():
 def register():
     if request.method == 'POST':
         data = request.get_json()
-        username = data.get('username')
+        user_id = data.get('user_id')
         password = data.get('password')
-        if not username or not password:
-            return jsonify({"message": "Username and password are required!"}), 400
+        
+        if not user_id or not password:
+            return jsonify({"message": "user_id and password are required!"}), 400
+
+        # Check if the user_id already exists
+        existing_user = User.query.get(user_id)
+        if existing_user:
+            return jsonify({"message": "user_id already exists!"}), 409  # 409 Conflict status code
 
         hashed_password = generate_password_hash(password, method='sha256')
-        new_user = User(username=username, password=hashed_password)
+        new_user = User(user_id=user_id, password=hashed_password)
         db.session.add(new_user)
         db.session.commit()
         return jsonify({"message": "User registered successfully!"}), 201
+    
     return render_template('register.html')
+
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-        # Access form data directly from request.form
-        username = request.form.get('username')
+        user_id = request.form.get('user_id')
         password = request.form.get('password')
         
-        if not username or not password:
-            return jsonify({"message": "Username and password are required!"}), 400
+        if not user_id or not password:
+            return jsonify({"message": "user_id and password are required!"}), 400
 
-        # Retrieve user from the database
-        user = User.query.filter_by(username=username).first()
+        # Retrieve user from the database using user_id as the primary key
+        user = User.query.get(user_id)
         
         # Validate credentials
         if not user or not check_password_hash(user.password, password):
-            return jsonify({"message": "Invalid username or password!"}), 401
+            return jsonify({"message": "Invalid user_id or password!"}), 401
 
         # Generate JWT token upon successful login
         token = jwt.encode({
-            "user_id": user.id,
+            "user_id": user.user_id,  # Store user_id in the token
             "exp": datetime.datetime.utcnow() + datetime.timedelta(hours=1)
         }, SECRET_KEY, algorithm="HS256")
         
